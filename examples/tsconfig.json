@@ -1,0 +1,26 @@
+{
+  // Type-checks the example modules against the SDK's real types (../src via the path alias below).
+  // Mirrors ../tsconfig.json (Bundler resolution — see the note there) but relaxes the unused
+  // locals/parameters rules that are appropriate for library code, not demo code. vite.config.ts is
+  // intentionally excluded (it depends on `vite`, an examples-only devDependency).
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    "types": ["node"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@missionsquad/browserai": ["../src/index.ts"]
+    }
+  },
+  "include": ["shared.ts", "text-generation.ts", "json-extraction.ts", "speech.ts", "voice-assistant.ts", "vision.ts"]
+}

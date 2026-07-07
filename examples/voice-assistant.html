@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice assistant · BrowserAI</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>4 · Voice assistant</h1>
+        <a class="back" href="./index.html">← all examples</a>
+      </header>
+      <p class="lede"><code>VoicePipeline</code> is a headless press-to-talk state machine: mic → transcribe → LLM → spoken reply. With Kokoro in the speech slot, the reply is spoken sentence-by-sentence <em>while the model is still generating</em>. You build the UI from its typed events; this page is one such UI.</p>
+
+      <div class="panel">
+        <h2>Models</h2>
+        <p class="stat">Recommended chain ≈ 2.5&nbsp;GB VRAM: Whisper Base + Qwen3.5 0.8B + Kokoro 82M. First load downloads them.</p>
+        <div class="row">
+          <button id="loadModels">Load recommended models</button>
+          <span id="loadStatus" class="stat">not loaded</span>
+        </div>
+        <div class="row"><progress id="progress" max="1" value="0"></progress></div>
+      </div>
+
+      <div class="panel">
+        <h2>Conversation <span id="stage" class="badge stage">idle</span></h2>
+        <div class="row">
+          <button id="talk" class="talk" disabled>🎙 Press to talk</button>
+          <button id="reset" class="secondary" disabled>New chat</button>
+        </div>
+        <div id="error" class="error" style="margin-top:8px"></div>
+        <div id="bubbles" class="bubbles" style="margin-top:12px"></div>
+        <div class="note" id="live"></div>
+      </div>
+
+      <p class="note">Press once to start listening, press again to send. Pressing while a reply is playing stops it (barge-in). Discarded takes (too short, no speech, empty reply, or contention with other work) never touch the conversation history.</p>
+    </div>
+    <script type="module" src="./voice-assistant.ts"></script>
+  </body>
+</html>

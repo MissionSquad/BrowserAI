@@ -1,0 +1,62 @@
+{
+  "name": "@missionsquad/browserai",
+  "version": "0.1.0",
+  "description": "Run small open AI models entirely in the browser with WebGPU: model catalog, capability slots, WebLLM + Transformers.js + Kokoro inference, streaming, schema-constrained JSON, metrics, cache management, and a press-to-talk voice pipeline — as an embeddable, UI-free SDK.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./worker": {
+      "types": "./dist/webllm.worker.d.ts",
+      "default": "./dist/webllm.worker.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "worker-template",
+    "README.md"
+  ],
+  "sideEffects": [
+    "./dist/webllm.worker.js"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc --noEmit && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "webgpu",
+    "webllm",
+    "transformers.js",
+    "onnx",
+    "browser",
+    "llm",
+    "stt",
+    "tts",
+    "kokoro",
+    "whisper",
+    "voice-assistant",
+    "local-ai"
+  ],
+  "author": "Mission Squad",
+  "license": "ISC",
+  "dependencies": {
+    "@huggingface/transformers": "4.2.0",
+    "@mlc-ai/web-llm": "0.2.84"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.4",
+    "typescript": "6.0.3",
+    "vitest": "4.1.9"
+  }
+}

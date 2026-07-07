@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Text generation · BrowserAI</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>1 · Text generation</h1>
+        <a class="back" href="./index.html">← all examples</a>
+      </header>
+      <p class="lede">Load a text model into the <code>text</code> slot and stream a completion. The output arrives token by token via the <code>onDelta</code> callback; per-run metrics come back in <code>stats</code>.</p>
+
+      <div class="panel">
+        <h2>Model</h2>
+        <div class="row">
+          <div class="grow">
+            <label for="model">Text model (loads into the text slot)</label>
+            <select id="model"></select>
+          </div>
+          <button id="load">Load model</button>
+        </div>
+        <div class="row"><progress id="progress" max="1" value="0"></progress></div>
+        <div class="row"><span id="progressLabel" class="stat">idle</span></div>
+        <div id="log" class="log"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Prompt</h2>
+        <div class="row">
+          <div class="grow">
+            <label for="system">System</label>
+            <input id="system" type="text" value="You are a concise, helpful assistant." />
+          </div>
+        </div>
+        <div class="row">
+          <div class="grow">
+            <label for="prompt">User</label>
+            <textarea id="prompt">Explain what WebGPU is in two sentences.</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <button id="generate" disabled>Generate</button>
+        </div>
+        <h3 style="margin-top:16px">Output</h3>
+        <div id="output" class="output"></div>
+        <div id="stats" class="stat ok" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <script type="module" src="./text-generation.ts"></script>
+  </body>
+</html>

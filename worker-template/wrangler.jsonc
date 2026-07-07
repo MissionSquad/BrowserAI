@@ -1,0 +1,19 @@
+{
+  // Example Wrangler config for the @missionsquad/browserai proxy Worker.
+  // Copy cloudflare-worker.ts + this file into your project, adjust the name/routes, and deploy
+  // with `npx wrangler deploy`. To also serve your site's static assets from the same Worker,
+  // point `assets.directory` at your build output.
+  "name": "browserai-proxy",
+  "compatibility_date": "2026-06-30",
+  "main": "./cloudflare-worker.ts",
+
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+
+    // Run the Worker before assets for every path so /hf/*, /hf-transformers/*, /gh-raw/* and the
+    // diagnostics routes are always handled; normal app files are delegated to env.ASSETS.
+    "run_worker_first": true
+  }
+}

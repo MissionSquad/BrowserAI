@@ -1,0 +1,15 @@
+{
+  "name": "browserai-examples",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Runnable browser examples for @missionsquad/browserai. Aliases the package to the local source.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vision Q&amp;A · BrowserAI</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>5 · Vision Q&amp;A</h1>
+        <a class="back" href="./index.html">← all examples</a>
+      </header>
+      <p class="lede">Load a vision-language model into the <code>vision</code> slot and ask questions about an image. <code>describeImage()</code> takes an image source (a data URL or an https URL) plus a prompt, and streams the answer.</p>
+
+      <div class="panel">
+        <h2>Model</h2>
+        <div class="row">
+          <div class="grow">
+            <label for="model">Vision model (vision slot)</label>
+            <select id="model"></select>
+          </div>
+          <button id="load">Load model</button>
+        </div>
+        <div class="row"><progress id="progress" max="1" value="0"></progress></div>
+        <div class="row"><span id="progressLabel" class="stat">idle</span></div>
+        <div id="log" class="log"></div>
+        <p class="note">Vision models require WebGPU (no wasm fallback).</p>
+      </div>
+
+      <div class="panel">
+        <h2>Image</h2>
+        <div class="row">
+          <input id="file" type="file" accept="image/*" />
+        </div>
+        <img id="preview" class="preview" alt="" hidden />
+      </div>
+
+      <div class="panel">
+        <h2>Question</h2>
+        <div class="row">
+          <div class="grow">
+            <input id="question" type="text" value="Describe this image in one sentence." />
+          </div>
+          <button id="ask" disabled>Ask</button>
+        </div>
+        <h3 style="margin-top:12px">Answer</h3>
+        <div id="answer" class="output"></div>
+        <div id="stats" class="stat" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <script type="module" src="./vision.ts"></script>
+  </body>
+</html>

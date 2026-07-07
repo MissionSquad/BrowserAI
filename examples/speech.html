@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Speech · BrowserAI</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>3 · Speech in &amp; out</h1>
+        <a class="back" href="./index.html">← all examples</a>
+      </header>
+      <p class="lede">Transcription (STT) and speech synthesis (TTS) occupy different capability slots, so both models can be loaded at once. The mic is captured with <code>MicRecorder</code>, which hands back 16&nbsp;kHz mono PCM ready for <code>transcribe()</code>.</p>
+
+      <div class="panel">
+        <h2>Transcription (speech → text)</h2>
+        <div class="row">
+          <div class="grow">
+            <label for="sttModel">Transcription model (stt slot)</label>
+            <select id="sttModel"></select>
+          </div>
+          <button id="loadStt">Load</button>
+        </div>
+        <div class="row"><progress id="sttProgress" max="1" value="0"></progress></div>
+        <div class="row">
+          <button id="record" class="talk" disabled>● Record</button>
+          <span id="sttStatus" class="stat">load a model first</span>
+        </div>
+        <h3 style="margin-top:12px">Transcript</h3>
+        <div id="transcript" class="output"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Synthesis (text → speech)</h2>
+        <div class="row">
+          <div class="grow">
+            <label for="ttsModel">Speech model (tts slot)</label>
+            <select id="ttsModel"></select>
+          </div>
+          <button id="loadTts">Load</button>
+        </div>
+        <div class="row"><progress id="ttsProgress" max="1" value="0"></progress></div>
+        <div class="row">
+          <div class="grow">
+            <label for="say">Text to speak</label>
+            <input id="say" type="text" value="Hello from a model running entirely in your browser." />
+          </div>
+        </div>
+        <div class="row">
+          <button id="speak" disabled>Speak</button>
+          <span id="ttsStatus" class="stat">load a model first</span>
+        </div>
+        <audio id="player" controls style="width:100%;margin-top:10px"></audio>
+      </div>
+
+      <p class="note">Whisper/Moonshine transcription and the TTS engines can run on wasm when WebGPU is unavailable, so this page works on more devices than the text/vision examples.</p>
+    </div>
+    <script type="module" src="./speech.ts"></script>
+  </body>
+</html>

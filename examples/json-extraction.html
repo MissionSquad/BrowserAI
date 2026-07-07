@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Structured JSON · BrowserAI</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>2 · Structured JSON extraction</h1>
+        <a class="back" href="./index.html">← all examples</a>
+      </header>
+      <p class="lede">Extract a typed JSON object from free text. On WebLLM (MLC) models the schema drives a grammar-constrained decoder, so the output is valid JSON by construction; other backends are prompt-guided, so the result is validated either way.</p>
+
+      <div class="panel">
+        <h2>Model</h2>
+        <div class="row">
+          <div class="grow">
+            <label for="model">Text model</label>
+            <select id="model"></select>
+          </div>
+          <button id="load">Load model</button>
+        </div>
+        <div class="row"><progress id="progress" max="1" value="0"></progress></div>
+        <div class="row"><span id="progressLabel" class="stat">idle</span></div>
+        <div id="log" class="log"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Input</h2>
+        <div class="row">
+          <div class="grow">
+            <label for="text">Text to extract from</label>
+            <textarea id="text">Ada Lovelace was an English mathematician who worked with Charles Babbage on the Analytical Engine. She is often described as the first computer programmer and was skilled in mathematics and logic.</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="grow">
+            <label for="schema">JSON Schema</label>
+            <textarea id="schema" style="min-height:180px"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <button id="extract" disabled>Extract</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Result</h2>
+        <h3>Raw model output</h3>
+        <div id="raw" class="output mono"></div>
+        <h3 style="margin-top:12px">Parsed object</h3>
+        <div id="parsed" class="output mono"></div>
+        <div id="validation" class="stat" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <script type="module" src="./json-extraction.ts"></script>
+  </body>
+</html>

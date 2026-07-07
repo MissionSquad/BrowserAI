@@ -1,0 +1,15 @@
+import { fileURLToPath } from "node:url";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      // The worker template imports the published package name; tests resolve it to the source.
+      "@missionsquad/browserai": fileURLToPath(new URL("./src/index.ts", import.meta.url)),
+    },
+  },
+  test: {
+    include: ["test/**/*.test.ts"],
+    environment: "node",
+  },
+});

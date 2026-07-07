@@ -1,0 +1,27 @@
+{
+  // Whole-project type-check config (src + tests + worker template). Emits nothing;
+  // the publishable build uses tsconfig.build.json (src only, emits dist + declarations).
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    // Bundler resolution: @mlc-ai/web-llm is ESM ("type":"module") with extensionless internal
+    // re-exports, which NodeNext refuses — its types silently degrade to `any` there. Relative
+    // imports still carry .js extensions so the emitted ESM works in bundlers and native ESM alike.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    "types": ["node"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@missionsquad/browserai": ["./src/index.ts"]
+    }
+  },
+  "include": ["src", "test", "worker-template", "vitest.config.ts"]
+}

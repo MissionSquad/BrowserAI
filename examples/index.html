@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BrowserAI examples</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>@missionsquad/browserai — examples</h1>
+      </header>
+      <p class="lede">
+        Small AI models running entirely in your browser with WebGPU — no server. Each page is a
+        self-contained demo of one part of the SDK. Models download on first use (hundreds of MB to a
+        few GB) and are cached by the browser afterwards.
+      </p>
+
+      <div class="cards">
+        <a class="card" href="./text-generation.html">
+          <h2>1 · Text generation</h2>
+          <p>Load a text model, stream a completion token by token, and read the runtime metrics.</p>
+        </a>
+        <a class="card" href="./json-extraction.html">
+          <h2>2 · Structured JSON</h2>
+          <p>Schema-constrained decoding: extract a typed JSON object from free text and validate it.</p>
+        </a>
+        <a class="card" href="./speech.html">
+          <h2>3 · Speech in &amp; out</h2>
+          <p>Record the mic and transcribe it (STT); type text and synthesize speech (TTS).</p>
+        </a>
+        <a class="card" href="./voice-assistant.html">
+          <h2>4 · Voice assistant</h2>
+          <p>The full press-to-talk pipeline: mic → transcribe → LLM → spoken reply, as events.</p>
+        </a>
+        <a class="card" href="./vision.html">
+          <h2>5 · Vision Q&amp;A</h2>
+          <p>Load a vision-language model and ask questions about an image you choose.</p>
+        </a>
+      </div>
+
+      <p class="note">
+        Requires a WebGPU-capable browser (recent Chrome, Edge, or Chrome-based). Transcription and
+        speech models can fall back to wasm; text, vision, and multimodal models require WebGPU.
+      </p>
+    </div>
+  </body>
+</html>

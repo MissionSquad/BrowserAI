@@ -1,0 +1,69 @@
+name: Publish
+
+# Runs when a PR is merged to main (a merge is a push to main). Direct pushes to main are covered
+# by the same trigger. Publishing is guarded: it only happens when package.json's version is not
+# already on the npm registry, so merges that don't bump the version build + test and stop there.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: read
+
+# Never run two publishes at once. Note GitHub keeps at most ONE pending run per group: if several
+# pushes land while a publish is running, only the newest pending run survives (older pending runs
+# are cancelled). The surviving run checks out the newest commit, so the latest version always
+# publishes — but if two rapid merges each bump the version, the intermediate version is skipped.
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          # Writes an .npmrc that authenticates via NODE_AUTH_TOKEN for the publish step.
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (type-check + emit dist)
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Check whether this version is already on npm
+        id: version
+        # `npm view <pkg>@<version> version` prints nothing (or 404s) when the version — or the
+        # whole package — has never been published; either way an empty result means "publish".
+        run: |
+          NAME="$(node -p "require('./package.json').name")"
+          VERSION="$(node -p "require('./package.json').version")"
+          PUBLISHED="$(npm view "${NAME}@${VERSION}" version 2>/dev/null || true)"
+          if [ -z "$PUBLISHED" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "${NAME}@${VERSION} is not on the registry yet — will publish."
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "${NAME}@${VERSION} already published — skipping."
+          fi
+
+      - name: Publish to npm
+        if: steps.version.outputs.publish == 'true'
+        # --access public is required for the first publish of a scoped package (@missionsquad/…);
+        # scoped packages default to restricted. prepublishOnly re-runs build + test as a final gate.
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
