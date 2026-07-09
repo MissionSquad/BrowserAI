@@ -39,7 +39,7 @@ import type { ModelSourceMode } from "./model-source.js";
 import { applyContextOverride, buildWebLLMAppConfig, TRANSFORMERS_CACHE_KEY } from "./model-source.js";
 import { verifyTransformersProxy, verifyWebLLMProxy } from "./proxy-verify.js";
 import type { HardwareSnapshot } from "./hardware.js";
-import { collectHardwareSnapshot } from "./hardware.js";
+import { collectHardwareSnapshot, isChromiumBased } from "./hardware.js";
 import type { CacheCleanupResult, CachedModelStatus, IndividualModelCleanupResult, ModelCacheTarget, StorageEstimateSnapshot } from "./model-cache.js";
 import {
   deleteOneModelArtifactsFromBrowserStorage,
@@ -261,11 +261,16 @@ export class BrowserAI extends TypedEmitter<BrowserAIEvents> {
     try {
       this.#hardware = await collectHardwareSnapshot();
       let device: MultimodalDevice = "webgpu";
+      const wasmCapable = !!preset.mmRuntime && WASM_CAPABLE_RUNTIMES.has(preset.mmRuntime);
       if (!this.#hardware.webgpuSupported) {
         // Only the runtimes whose loaders honor a wasm device (ASR pipelines, TTS) can fall back;
         // VLM/Gemma/audio-LLM recipes hardcode WebGPU, and text engines require it outright.
-        if (preset.mmRuntime && WASM_CAPABLE_RUNTIMES.has(preset.mmRuntime)) device = "wasm";
+        if (wasmCapable) device = "wasm";
         else throw new WebGPUUnavailableError(this.#hardware.webgpuReason);
+      } else if (wasmCapable && !isChromiumBased()) {
+        // Firefox and Safari now pass the WebGPU probe, but onnxruntime-web's WebGPU backend only
+        // reliably runs on Chromium (shader miscompiles / quantized-session failures elsewhere).
+        device = "wasm";
       }
 
       // Free any loaded models occupying the slots this one needs, waiting out their in-flight runs.

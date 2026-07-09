@@ -4,9 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /* Module mocks: fake WebGPU probe + fake engines                      */
 /* ------------------------------------------------------------------ */
 
-const hardwareState = { webgpuSupported: true };
+const hardwareState = { webgpuSupported: true, chromiumBased: true };
 
 vi.mock("../src/hardware.js", () => ({
+  isChromiumBased: () => hardwareState.chromiumBased,
   collectHardwareSnapshot: async () => ({
     webgpuSupported: hardwareState.webgpuSupported,
     webgpuReason: hardwareState.webgpuSupported ? "ok" : "no adapter",
@@ -99,6 +100,7 @@ import { UnknownModelError, WebGPUUnavailableError } from "../src/errors.js";
 
 beforeEach(() => {
   hardwareState.webgpuSupported = true;
+  hardwareState.chromiumBased = true;
   created.length = 0;
   transformersCalls.length = 0;
   activeGenerations = 0;
@@ -166,6 +168,17 @@ describe("BrowserAI slot manager", () => {
     await ai.load("onnx-community/whisper-base");
     const call = transformersCalls.find((entry) => entry.task === "automatic-speech-recognition");
     expect(call?.options.device).toBe("wasm");
+  });
+
+  it("prefers wasm for ASR/TTS presets off-Chromium even when the WebGPU probe passes", async () => {
+    hardwareState.chromiumBased = false;
+    const ai = new BrowserAI();
+    await ai.load("onnx-community/whisper-base");
+    const call = transformersCalls.find((entry) => entry.task === "automatic-speech-recognition");
+    expect(call?.options.device).toBe("wasm");
+    // The wasm EP must cap graph optimization: ORT 1.26-dev's extended QDQ rewrites break the
+    // quantized ASR decoders at session creation ("Missing required scale" / MatMulNBits).
+    expect(call?.options.session_options).toEqual({ graphOptimizationLevel: "basic" });
   });
 
   it("does NOT offer a wasm fallback for VLM/Gemma/audio-LLM presets (their recipes hardcode WebGPU)", async () => {
