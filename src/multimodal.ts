@@ -214,7 +214,16 @@ export async function loadMultimodal(
         (device === "webgpu"
           ? { encoder_model: "fp32", decoder_model_merged: "q4" }
           : { encoder_model: "fp32", decoder_model_merged: "q8" });
-      const transcriber = await transformers.pipeline("automatic-speech-recognition", preset.id, { device, dtype, progress_callback });
+      const transcriber = await transformers.pipeline("automatic-speech-recognition", preset.id, {
+        device,
+        dtype,
+        progress_callback,
+        // onnxruntime-web 1.26-dev's extended graph optimizations fail at session creation for the
+        // quantized ASR decoders on the wasm EP (qdq_actions.cc: "Missing required scale …
+        // TransposeDQWeightsForMatMulNBits"). Capping at "basic" skips the broken QDQ rewrites —
+        // verified to load and transcribe. The WebGPU path keeps the default level.
+        ...(device === "wasm" ? { session_options: { graphOptimizationLevel: "basic" as const } } : {}),
+      });
       return { kind: "stt", transcriber };
     }
     case "tts-pipeline": {

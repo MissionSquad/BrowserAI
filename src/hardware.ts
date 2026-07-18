@@ -19,6 +19,21 @@ export type HardwareSnapshot = {
   platform?: string;
 };
 
+/**
+ * Whether this is a Chromium-based browser (Chrome, Edge, Opera, Brave, …), per the UA-Client-Hints
+ * brand list. onnxruntime-web's WebGPU backend is developed and tested against Chromium; Firefox's
+ * and Safari's newer WebGPU implementations still fail on some of its generated WGSL and its
+ * quantized-weight session transforms (errors that only surface at load/inference time), so
+ * wasm-capable runtimes prefer wasm off-Chromium even when the WebGPU probe passes.
+ * navigator.userAgentData is itself Chromium-only, and every Chromium new enough for WebGPU (113+)
+ * ships it, so the brand list is a reliable signal.
+ */
+export function isChromiumBased(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const nav = navigator as Navigator & { userAgentData?: { brands?: Array<{ brand: string }> } };
+  return nav.userAgentData?.brands?.some((entry) => entry.brand === "Chromium") ?? false;
+}
+
 const LIMIT_NAMES = [
   "maxBufferSize",
   "maxStorageBufferBindingSize",
