@@ -227,3 +227,7 @@ npm test        # vitest unit tests
 ## License
 
 ISC
+
+### MiniCPM5 2B
+
+MiniCPM5 2B is available through Transformers.js/WebGPU (`RASMUS/MiniCPM5-2B-ONNX`, q4f16). See [runtime measurements and the Heretic ONNX conversion recipe](docs/minicpm5.md). The Heretic conversion is tested locally; its catalog registration is pending an artifact hosting repository.
