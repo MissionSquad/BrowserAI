@@ -1,6 +1,11 @@
 # MiniCPM5 2B browser integration
 
-The regular model is selectable as `RASMUS/MiniCPM5-2B-ONNX` in both the catalog and text slot. It uses Transformers.js 4.2.0 with WebGPU and `q4f16`. No new JavaScript runtime dependency is needed. Its Hugging Face repository is automatically included in the existing Transformers artifact proxy allowlist and cache management.
+Both variants use Transformers.js 4.2.0 with WebGPU and `q4f16`, and occupy the text slot. No new JavaScript runtime dependency is needed. Their separate Hugging Face repositories are automatically included in the existing Transformers artifact proxy allowlist and cache management.
+
+| Variant | Catalog ID | Browser artifact |
+| --- | --- | --- |
+| MiniCPM5 2B | `RASMUS/MiniCPM5-2B-ONNX` | [Regular ONNX](https://huggingface.co/RASMUS/MiniCPM5-2B-ONNX) |
+| MiniCPM5 2B Heretic | `j4ys0n/MiniCPM5-2B-heretic-abliterated-ONNX` | [Heretic ONNX](https://huggingface.co/j4ys0n/MiniCPM5-2B-heretic-abliterated-ONNX) |
 
 The original model is [OpenBMB MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B); the browser artifact is [RASMUS's ONNX export](https://huggingface.co/RASMUS/MiniCPM5-2B-ONNX). It requires `shader-f16`, downloads approximately 1.83 GB of weights, and defaults to thinking disabled. Memory usage is estimated at 3 GB and varies with context. The existing default model is unchanged. JSON schemas remain prompt instructions on this backend; they are not grammar-constrained decoding.
 
@@ -17,11 +22,11 @@ ONNX had about 20% higher decode throughput on this machine. WebLLM offers nativ
 
 This is a small hardware-specific sample, not a universal benchmark. The quantizations produced different outputs and completion lengths; total generation duration is not used to rank them. The MLC comparison used [this WebLLM 0.2.84-compatible artifact](https://huggingface.co/ozhyhinas/MiniCPM5-2B-q4f16_1-MLC), with a 4096-token context.
 
-## Heretic conversion and remaining hosting step
+## Heretic conversion
 
 The requested [Abiray GGUF card](https://huggingface.co/Abiray/MiniCPM5-2B-heretic-abliterated-GGUF) references [insraq's original Heretic safetensors checkpoint](https://huggingface.co/insraq/MiniCPM5-2B-heretic-abliterated). No published ONNX/MLC conversion of that fine-tune was found on September 10, 2026. The included script converts the original checkpoint, pinned at `8d83eaf42e30f4e4f164b8685be0ecdccd8ef0d8`, directly to ONNX. It never reads GGUF.
 
-The converted model has been tested locally in both projects with streaming, thinking on/off, token/timing reporting, and SDK load/unload/cache inspection. Its 473 graph nodes and input/output shapes match the pinned regular ONNX graph. The conversion needs a public artifact repository before a permanent, loadable Heretic catalog entry can be added. Do not point a Transformers.js preset at the safetensors or GGUF repository: neither contains ONNX files.
+The converted model has been tested locally in both projects with streaming, thinking on/off, token/timing reporting, and SDK load/unload/cache inspection. Its 473 graph nodes and input/output shapes match the pinned regular ONNX graph. The converted files are published in the public, ungated [j4ys0n/MiniCPM5-2B-heretic-abliterated-ONNX](https://huggingface.co/j4ys0n/MiniCPM5-2B-heretic-abliterated-ONNX) repository. The catalog links to this ONNX artifact and attributes the fine-tune to the original insraq checkpoint. Both variants retain distinct IDs, cache paths and history labels.
 
 To reproduce with Python 3.13 in an isolated environment:
 
@@ -37,4 +42,4 @@ python3 -m venv /tmp/minicpm5-convert-env
 
 Allow space for the approximately 5 GB source, intermediate export and 1.83 GB final weights. The output directory is `/tmp/minicpm5-conversion/browser-model`. It includes a model card, source revision, exact tool versions and SHA-256 checksums. The script applies the three browser fixes documented by RASMUS: concrete KV head dimension 128, an embedded text chat template, and removal of the unused unsupported Jinja `min` assignment. It also declares external data and an fp16 KV cache in `config.json`.
 
-After selecting an artifact repository, authenticate using `hf auth login` and upload the output folder with `hf upload OWNER/REPO /tmp/minicpm5-conversion/browser-model . --repo-type model`. Then add a separate `transformers-js` / `q4f16` preset using that exact `OWNER/REPO`, linking its `officialRepo` to the original insraq checkpoint. The regular and fine-tuned variants must retain distinct IDs, cache paths and history labels.
+The conversion script prepares files locally and never uploads them. The public repository includes `conversion-manifest.json` with the source revision, tool versions and artifact checksums. Published ONNX weights have SHA-256 `66ed0b1b1e016e6cf65d1014aa6b542497333860ef561402b18103dbd39eae1a`.

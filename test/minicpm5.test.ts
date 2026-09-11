@@ -3,14 +3,20 @@ import { generate, type EngineHandles, type TransformersTokenizer } from "../src
 import { runtimeParamsFromPreset } from "../src/generation.js";
 import { getModelPreset, modelSlots } from "../src/models.js";
 
-describe("MiniCPM5 2B ONNX", () => {
-  const preset = getModelPreset("RASMUS/MiniCPM5-2B-ONNX");
+const variants = [
+  { id: "RASMUS/MiniCPM5-2B-ONNX", original: "https://huggingface.co/openbmb/MiniCPM5-2B" },
+  { id: "j4ys0n/MiniCPM5-2B-heretic-abliterated-ONNX", original: "https://huggingface.co/insraq/MiniCPM5-2B-heretic-abliterated" },
+];
+
+describe.each(variants)("MiniCPM5 2B ONNX: $id", ({ id, original }) => {
+  const preset = getModelPreset(id);
 
   it("uses the browser-tested q4f16 artifact as a text-only model", () => {
-    expect(preset.id).toBe("RASMUS/MiniCPM5-2B-ONNX");
+    expect(preset.id).toBe(id);
     expect(preset.backend).toBe("transformers-js");
     expect(preset.transformersDtype).toBe("q4f16");
-    expect(preset.officialRepo).toBe("https://huggingface.co/openbmb/MiniCPM5-2B");
+    expect(preset.officialRepo).toBe(original);
+    expect(preset.artifactRepo).toBe(`https://huggingface.co/${id}`);
     expect(modelSlots(preset)).toEqual(["text"]);
     expect(preset.defaultRuntime.disableThinking).toBe(true);
   });
@@ -48,4 +54,11 @@ describe("MiniCPM5 2B ONNX", () => {
     expect(result.stats.totalTokens).toBe(disableThinking ? 7 : 4);
     expect(result.stats.backend).toBe("transformers-js");
   });
+});
+
+it("keeps regular and Heretic cache identities and history labels distinct", () => {
+  const [regular, heretic] = variants.map(({ id }) => getModelPreset(id));
+  expect(regular.id).not.toBe(heretic.id);
+  expect(regular.artifactRepo).not.toBe(heretic.artifactRepo);
+  expect(regular.shortName).not.toBe(heretic.shortName);
 });

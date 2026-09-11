@@ -230,4 +230,4 @@ ISC
 
 ### MiniCPM5 2B
 
-MiniCPM5 2B is available through Transformers.js/WebGPU (`RASMUS/MiniCPM5-2B-ONNX`, q4f16). See [runtime measurements and the Heretic ONNX conversion recipe](docs/minicpm5.md). The Heretic conversion is tested locally; its catalog registration is pending an artifact hosting repository.
+MiniCPM5 2B (`RASMUS/MiniCPM5-2B-ONNX`) and MiniCPM5 2B Heretic (`j4ys0n/MiniCPM5-2B-heretic-abliterated-ONNX`) are available through Transformers.js/WebGPU with q4f16 weights. See [runtime measurements, model sources and the Heretic ONNX conversion recipe](docs/minicpm5.md).
