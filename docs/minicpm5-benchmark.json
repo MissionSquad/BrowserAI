@@ -1,0 +1,72 @@
+{
+  "date": "2026-09-10",
+  "browser": "Chrome 152 on macOS 26.4 (Apple WebGPU adapter)",
+  "prompt": "System: You are a helpful assistant. User: Explain why leaves change color in autumn in about 100 words.",
+  "max_new_tokens": 128,
+  "thinking": false,
+  "temperature": 0,
+  "warmup_runs": 1,
+  "notes": "Different quantizations can generate different text/token counts. Decode throughput and TTFT are compared; total duration is not a quality or speed ranking. Hardware-specific sample, not a universal performance claim.",
+  "runtimes": {
+    "onnx": [
+      {
+        "run": 0,
+        "elapsedMs": 2031.6000003814697,
+        "tokens": 72,
+        "ttftMs": 644.5,
+        "decodeTokensPerSecond": 51.1859274605105
+      },
+      {
+        "run": 1,
+        "elapsedMs": 1381,
+        "tokens": 72,
+        "ttftMs": 105.5,
+        "decodeTokensPerSecond": 55.664445315562524
+      },
+      {
+        "run": 2,
+        "elapsedMs": 1357.1999998092651,
+        "tokens": 72,
+        "ttftMs": 109.19999980926514,
+        "decodeTokensPerSecond": 56.89102564102564
+      },
+      {
+        "run": 3,
+        "elapsedMs": 1419.3000001907349,
+        "tokens": 72,
+        "ttftMs": 113.10000038146973,
+        "decodeTokensPerSecond": 54.356147611673265
+      }
+    ],
+    "webllm": [
+      {
+        "run": 0,
+        "elapsedMs": 2245.5,
+        "tokens": 94,
+        "ttftMs": 196.69999980926514,
+        "decodeTokensPerSecond": 46.296296239758604
+      },
+      {
+        "run": 1,
+        "elapsedMs": 2183.5,
+        "tokens": 94,
+        "ttftMs": 104.89999961853027,
+        "decodeTokensPerSecond": 45.56912950308961
+      },
+      {
+        "run": 2,
+        "elapsedMs": 2175.5,
+        "tokens": 94,
+        "ttftMs": 112.5,
+        "decodeTokensPerSecond": 45.89171511925907
+      },
+      {
+        "run": 3,
+        "elapsedMs": 2108.199999809265,
+        "tokens": 94,
+        "ttftMs": 102.20000076293945,
+        "decodeTokensPerSecond": 47.18401767342618
+      }
+    ]
+  }
+}

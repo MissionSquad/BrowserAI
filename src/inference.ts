@@ -305,9 +305,10 @@ async function runTransformers(
 ): Promise<TransformersRunResult> {
   const generator = handles.transformersGenerator!;
   const tokenizer = handles.transformersTokenizer ?? generator.tokenizer ?? null;
+  const chatTemplateOptions = preset.disableThinkingSupported ? { enable_thinking: !runtime.disableThinking } : undefined;
 
   const telemetry: TransformersGenerationTelemetry = {
-    promptTokens: countPromptTokens(tokenizer, messages),
+    promptTokens: countPromptTokens(tokenizer, messages, chatTemplateOptions),
     tokenCallbackIntervalSeconds: [],
     tokenCallbackCount: 0,
     tokenCountSource: "unavailable",
@@ -323,8 +324,8 @@ async function runTransformers(
   };
   if (runtime.temperature > 0) generationOptions.temperature = runtime.temperature;
   if (runtime.seed !== null) generationOptions.seed = runtime.seed;
-  if (preset.disableThinkingSupported) {
-    generationOptions.tokenizer_encode_kwargs = { enable_thinking: !runtime.disableThinking };
+  if (chatTemplateOptions) {
+    generationOptions.tokenizer_encode_kwargs = chatTemplateOptions;
   }
 
   const Streamer = handles.transformersModule?.TextStreamer;
@@ -514,11 +515,16 @@ function extractGeneratedText(output: unknown): string {
   return JSON.stringify(output, null, 2);
 }
 
-function countPromptTokens(tokenizer: TransformersTokenizer | null, messages: ChatMessage[]): number | undefined {
+function countPromptTokens(
+  tokenizer: TransformersTokenizer | null,
+  messages: ChatMessage[],
+  chatTemplateOptions?: Record<string, unknown>,
+): number | undefined {
   if (!tokenizer) return undefined;
   try {
     if (typeof tokenizer.apply_chat_template === "function") {
-      const tokenized = tokenizer.apply_chat_template(messages, { tokenize: true, add_generation_prompt: true });
+      // Count the same prompt the pipeline generates, including MiniCPM5's optional empty think block.
+      const tokenized = tokenizer.apply_chat_template(messages, { tokenize: true, add_generation_prompt: true, ...chatTemplateOptions });
       const count = extractTokenCount(tokenized);
       if (typeof count === "number") return count;
     }
