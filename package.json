@@ -1,6 +1,6 @@
 {
   "name": "@missionsquad/browserai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Run small open AI models entirely in the browser with WebGPU: model catalog, capability slots, WebLLM + Transformers.js + Kokoro inference, streaming, schema-constrained JSON, metrics, cache management, and a press-to-talk voice pipeline — as an embeddable, UI-free SDK.",
   "type": "module",
   "main": "./dist/index.js",
@@ -52,7 +52,8 @@
   "license": "ISC",
   "dependencies": {
     "@huggingface/transformers": "4.2.0",
-    "@mlc-ai/web-llm": "0.2.84"
+    "@mlc-ai/web-llm": "0.2.84",
+    "onnxruntime-tdt": "npm:onnxruntime-web@1.31.1"
   },
   "devDependencies": {
     "@types/node": "24.10.4",

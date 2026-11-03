@@ -12,7 +12,7 @@ export type { BrowserAIEvents, GenerateTextOptions, LoadOptions, LoadProgress, L
 
 // Configuration
 export { DEFAULT_CONTEXT_LENGTH, resolveConfig } from "./config.js";
-export type { BrowserAIConfig, HistoryOptions, KokoroOptions, ResolvedConfig, StorageLike, TtsDefaults, WebLLMOptions } from "./config.js";
+export type { BrowserAIConfig, HistoryOptions, KokoroOptions, ResolvedConfig, StorageLike, TdtOptions, TtsDefaults, WebLLMOptions } from "./config.js";
 
 // Errors
 export {
@@ -81,6 +81,7 @@ export type {
 // Multimodal runtimes (STT / TTS / VLM / Gemma)
 export {
   capSrc,
+  classifyImage,
   DEFAULT_KOKORO_CDN,
   describeImage,
   disposeMultimodal,
@@ -99,6 +100,7 @@ export {
 export type {
   AudioWindow,
   GenStats,
+  ImageClassificationResult,
   KokoroModule,
   LoadMultimodalOptions,
   MultimodalDevice,

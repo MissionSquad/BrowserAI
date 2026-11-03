@@ -14,7 +14,7 @@ export function buildMultimodalStats(gen: GenStats, modelId: string): RuntimeSta
   return {
     rawText: "",
     model: modelId,
-    backend: "transformers-js",
+    backend: getModelPreset(modelId).backend,
     finishReason: "stop",
     measuredElapsedMs: elapsedMs,
     completionTokens,
@@ -41,7 +41,7 @@ export function runRecordFromStats(caseKey: string, stats: RuntimeStats): RunRec
     ts: Date.now(),
     model: preset.shortName,
     vendor: vendorForModel(preset),
-    backend: stats.backend === "transformers-js" ? "transformers-js" : "webllm",
+    backend: stats.backend === "onnx-runtime" ? "onnx-runtime" : stats.backend === "transformers-js" ? "transformers-js" : "webllm",
     case: caseKey,
     promptTokens: stats.promptTokens ?? 0,
     completionTokens: stats.completionTokens ?? 0,

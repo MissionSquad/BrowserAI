@@ -11,7 +11,7 @@ export type RuntimePreset = {
   disableThinking: boolean;
 };
 
-export type ModelBackend = "webllm" | "transformers-js";
+export type ModelBackend = "webllm" | "transformers-js" | "onnx-runtime";
 
 /** Input/output modality of a model, used for the library modality-flow line + Playground gating. */
 export type Modality = "text" | "image" | "audio";
@@ -23,9 +23,11 @@ export type ModelTask = "text" | "vision" | "stt" | "tts";
  * inference recipe in llm/multimodal.ts.
  */
 export type MultimodalRuntime =
+  | "stt-tdt" // ONNX Runtime TDT speech recognition
   | "stt" // automatic-speech-recognition pipeline (Whisper / Moonshine)
   | "tts-kokoro" // kokoro-js KokoroTTS
   | "tts-pipeline" // native text-to-speech pipeline (Supertonic)
+  | "image-classification" // scored image labels (NSFW detection)
   | "vlm-vision2seq" // AutoModelForVision2Seq (SmolVLM)
   | "vlm-imagetext" // AutoModelForImageTextToText (Qwen3-VL, GLM-OCR)
   | "audio-text-to-text" // AutoModelForAudioTextToText with an <audio> token in the prompt (Granite Speech, Ultravox, non-realtime Voxtral)
@@ -60,6 +62,8 @@ export type ModelPreset = {
   modalityOut?: Modality[];
   /** How a multimodal (non-LLM-text) model loads + runs. Undefined for plain text LLMs. */
   mmRuntime?: MultimodalRuntime;
+  /** Per-model image processing and generation behavior. */
+  visionOptions?: { defaultPrompt?: string; maxNewTokens?: number; preserveSpecialTokens?: boolean; doImageSplitting?: boolean; outputFormat?: "doctags" };
   /** Optional display brand for the vendor tag (e.g. "Moonshine", "Kokoro", "Zhipu"). Falls back to the vendor label. */
   brand?: string;
 };
@@ -322,6 +326,80 @@ export const MODEL_PRESETS: ModelPreset[] = [
     officialRepo: "https://huggingface.co/google/gemma-4-E4B-it",
     artifactRepo: "https://huggingface.co/welcoma/gemma-4-E4B-it-q4f16_1-MLC",
   },
+  {
+    id: "enriqueag/phonon-2.5-onnx",
+    label: "Phonon 2.5 — compact speech recognition via WebGPU + WASM",
+    shortName: "Phonon 2.5",
+    description: "Fermion speech recognition with a compact quantized WebGPU encoder and a WASM token-duration decoder. Audio stays on device.",
+    approximateDownload: "~381 MB encoder, decoder and vocabulary",
+    vramRequiredMB: 1536,
+    vramSource: "estimated",
+    lowResourceRequired: true,
+    disableThinkingSupported: false,
+    defaultRuntime: extractionPreset(),
+    source: "transformers-onnx",
+    backend: "onnx-runtime",
+    stability: "experimental",
+    officialRepo: "https://huggingface.co/FermionResearch/Phonon-2.5",
+    artifactRepo: "https://huggingface.co/enriqueag/phonon-2.5-onnx",
+    tasks: ["stt"], modalityIn: ["audio"], modalityOut: ["text"],
+    mmRuntime: "stt-tdt",
+    brand: "Fermion",
+    notes: "Requires WebGPU for the compact encoder; the decoder runs on CPU/WASM. Long audio is split near quiet intervals into chunks of at most 30 seconds. Memory is estimated.",
+  },
+  {
+    id: "istupakov/parakeet-tdt-0.6b-v3-onnx",
+    label: "Parakeet TDT 0.6B v3 — multilingual speech recognition via WASM",
+    shortName: "Parakeet TDT v3",
+    description: "NVIDIA multilingual token-duration speech recognition, using the published int8 ONNX encoder and decoder on CPU/WASM.",
+    approximateDownload: "~671 MB int8 encoder, decoder, frontend and vocabulary",
+    vramRequiredMB: 0,
+    vramSource: "estimated",
+    lowResourceRequired: false,
+    disableThinkingSupported: false,
+    defaultRuntime: extractionPreset(),
+    source: "transformers-onnx",
+    backend: "onnx-runtime",
+    stability: "experimental",
+    officialRepo: "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+    artifactRepo: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx",
+    tasks: ["stt"], modalityIn: ["audio"], modalityOut: ["text"],
+    mmRuntime: "stt-tdt",
+    brand: "NVIDIA",
+    notes: "Runs on CPU/WASM and consumes system memory despite requiring no GPU memory. Long audio is split near quiet intervals into chunks of at most 30 seconds.",
+  },
+  {
+    id: "onnx-community/granite-docling-258M-ONNX",
+    label: "Granite Docling 258M — document conversion to DocTags",
+    shortName: "Granite Docling 258M",
+    description: "IBM Granite document vision model. Converts page images into structured DocTags, preserving layout and document markup.",
+    approximateDownload: "~1.27 GB FP32 ONNX modules plus tokenizer/config files",
+    vramRequiredMB: 3072, vramSource: "estimated", lowResourceRequired: false,
+    disableThinkingSupported: false, defaultRuntime: extractionPreset({ maxTokens: 4096 }),
+    source: "transformers-onnx", backend: "transformers-js", stability: "experimental",
+    officialRepo: "https://huggingface.co/ibm-granite/granite-docling-258M",
+    artifactRepo: "https://huggingface.co/onnx-community/granite-docling-258M-ONNX",
+    transformersDtype: "fp32", tasks: ["vision"], modalityIn: ["image", "text"], modalityOut: ["text"],
+    mmRuntime: "vlm-vision2seq", brand: "IBM",
+    visionOptions: { defaultPrompt: "Convert this page to docling.", maxNewTokens: 4096, preserveSpecialTokens: true, doImageSplitting: true, outputFormat: "doctags" },
+    notes: "FP32 is intentional: the FP16/q4f16 WebGPU paths failed accuracy smoke checks on Apple GPU. FP32 produced the expected result.",
+  },
+  {
+    id: "onnx-community/nsfw_image_detection-ONNX",
+    label: "NSFW image detection — scored normal / nsfw classification",
+    shortName: "NSFW image detection",
+    description: "ViT image classifier returning normal and nsfw scores. Scores are model predictions, not a guarantee of content safety.",
+    approximateDownload: "~343 MB FP32 ONNX weights plus image processor/config files",
+    vramRequiredMB: 768, vramSource: "estimated", lowResourceRequired: true,
+    disableThinkingSupported: false, defaultRuntime: extractionPreset({}),
+    source: "transformers-onnx", backend: "transformers-js", stability: "experimental",
+    officialRepo: "https://huggingface.co/Falconsai/nsfw_image_detection",
+    artifactRepo: "https://huggingface.co/onnx-community/nsfw_image_detection-ONNX",
+    transformersDtype: "fp32", tasks: ["vision"], modalityIn: ["image"], modalityOut: ["text"],
+    mmRuntime: "image-classification", brand: "Falconsai",
+    notes: "FP32 is intentional: the FP16/q4f16 WebGPU paths failed accuracy smoke checks on Apple GPU. FP32 produced the expected result.",
+  },
+
   {
     id: "onnx-community/whisper-base",
     label: "Whisper Base — multilingual speech-to-text via Transformers.js/WebGPU",
@@ -1029,6 +1107,31 @@ export const MODEL_PRESETS: ModelPreset[] = [
     transformersDtype: "q4",
   },
   {
+    id: "j4ys0n/NVIDIA-Nemotron-3.5-Bolt-E4B-ONNX",
+    label: "NVIDIA Nemotron 3.5 Bolt E4B ONNX — text, image and audio input; text output (~5.21 GB)",
+    shortName: "Nemotron 3.5 Bolt E4B",
+    description:
+      "NVIDIA's post-trained Gemma 4 E4B, exported for Transformers.js/WebGPU with text, image, and audio input and text output.",
+    approximateDownload: "~5.21 GB q4f16 ONNX artifacts plus tokenizer/config files",
+    vramRequiredMB: 8192,
+    vramSource: "estimated",
+    lowResourceRequired: false,
+    disableThinkingSupported: false,
+    defaultRuntime: extractionPreset({ maxTokens: 768, topP: 0.9, repetitionPenalty: 1.05 }),
+    source: "transformers-onnx",
+    backend: "transformers-js",
+    stability: "experimental",
+    officialRepo: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-BF16",
+    artifactRepo: "https://huggingface.co/j4ys0n/NVIDIA-Nemotron-3.5-Bolt-E4B-ONNX",
+    notes: "Text, image, and audio browser inference smoke-tested on Apple WebGPU. Output quality and GPU memory have not been benchmarked; GPU memory is an estimate, not a measured minimum.",
+    transformersDtype: "q4f16",
+    tasks: ["text", "vision", "stt"],
+    modalityIn: ["text", "image", "audio"],
+    modalityOut: ["text"],
+    mmRuntime: "gemma-mm",
+    brand: "NVIDIA",
+  },
+  {
     id: "onnx-community/gemma-4-E2B-it-ONNX",
     label: "Gemma 4 E2B ONNX — experimental Transformers.js/WebGPU alternative",
     shortName: "Gemma 4 E2B ONNX",
@@ -1210,4 +1313,10 @@ export function modelRepoLabel(preset: ModelPreset): string {
   } catch {
     return preset.id;
   }
+}
+
+/** Whether this preset has an implemented CPU/WASM load path. */
+export function supportsWasmFallback(preset: ModelPreset): boolean {
+  return preset.id === "istupakov/parakeet-tdt-0.6b-v3-onnx" ||
+    (preset.mmRuntime !== undefined && ["stt", "tts-pipeline", "tts-kokoro", "image-classification"].includes(preset.mmRuntime));
 }
