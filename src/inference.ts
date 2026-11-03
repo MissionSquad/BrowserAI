@@ -439,7 +439,7 @@ export function collectGenericStats(model: string, backend: ModelBackend | "unkn
 /* ------------------------------------------------------------------ */
 
 export function buildRuntimeStatsText(stats: RuntimeStats): string {
-  const backendLabel = stats.backend === "transformers-js" ? "Transformers.js" : stats.backend === "webllm" ? "WebLLM" : "unknown";
+  const backendLabel = stats.backend === "onnx-runtime" ? "ONNX Runtime" : stats.backend === "transformers-js" ? "Transformers.js" : stats.backend === "webllm" ? "WebLLM" : "unknown";
   const lines = [
     `model: ${stats.model}`,
     `backend: ${backendLabel}`,

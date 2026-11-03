@@ -1,6 +1,6 @@
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
-import type { ModelPreset, ModelTask } from "./models.js";
-import { getModelPreset, MODEL_PRESETS, modelRepoLabel, modelSlots } from "./models.js";
+import type { ModelPreset, ModelTask, ModelBackend } from "./models.js";
+import { getModelPreset, MODEL_PRESETS, modelRepoLabel, modelSlots, supportsWasmFallback } from "./models.js";
 import type {
   ChatMessage,
   EngineHandles,
@@ -13,7 +13,6 @@ import type {
 import { EMPTY_RESPONSE, generate } from "./inference.js";
 import type { RuntimeParameters } from "./generation.js";
 import { clampNumber, runtimeParamsFromPreset } from "./generation.js";
-import type { MultimodalRuntime } from "./models.js";
 import type {
   MultimodalDevice,
   MultimodalHandle,
@@ -22,9 +21,11 @@ import type {
   SttResult,
   TtsTextSplitter,
   VlmResult,
+  ImageClassificationResult,
 } from "./multimodal.js";
 import {
   describeImage as describeImageWithHandle,
+  classifyImage as classifyImageWithHandle,
   disposeMultimodal,
   generateGemmaText,
   loadMultimodal,
@@ -65,7 +66,7 @@ import { synthesizeClip } from "./audio/clip.js";
 export type LoadedModel = {
   modelId: string;
   slots: ModelTask[];
-  backend: "webllm" | "transformers-js";
+  backend: ModelBackend;
   engine: MLCEngineInterface | null;
   worker: Worker | null;
   transformersGenerator: TransformersTextGenerationPipeline | null;
@@ -81,7 +82,6 @@ export type LoadProgress = { modelId: string; progress: number; status?: string;
  * Multimodal runtimes whose loaders honor a wasm device. The VLM/Gemma/audio-LLM recipes hardcode
  * WebGPU (their verified recipes only run there), so they cannot fall back.
  */
-const WASM_CAPABLE_RUNTIMES: ReadonlySet<MultimodalRuntime> = new Set(["stt", "tts-pipeline", "tts-kokoro"]);
 
 export type BrowserAIEvents = {
   /** Download/initialization progress for the model currently loading (progress 0–1). */
@@ -261,7 +261,7 @@ export class BrowserAI extends TypedEmitter<BrowserAIEvents> {
     try {
       this.#hardware = await collectHardwareSnapshot();
       let device: MultimodalDevice = "webgpu";
-      const wasmCapable = !!preset.mmRuntime && WASM_CAPABLE_RUNTIMES.has(preset.mmRuntime);
+      const wasmCapable = supportsWasmFallback(preset);
       if (!this.#hardware.webgpuSupported) {
         // Only the runtimes whose loaders honor a wasm device (ASR pipelines, TTS) can fall back;
         // VLM/Gemma/audio-LLM recipes hardcode WebGPU, and text engines require it outright.
@@ -442,6 +442,18 @@ export class BrowserAI extends TypedEmitter<BrowserAIEvents> {
   }
 
   async #loadMultimodalModel(preset: ModelPreset, device: MultimodalDevice, progress: (info: Omit<LoadProgress, "modelId">) => void): Promise<LoadedModel> {
+    if (preset.mmRuntime === "stt-tdt") {
+      this.#status(`Loading ${preset.shortName} with ONNX Runtime…`);
+      const root = this.#modelSourceMode() === "same-origin-proxy"
+        ? `${this.#requireProxyOrigin()}/hf-transformers/` : "https://huggingface.co/";
+      if (this.#modelSourceMode() === "same-origin-proxy" && this.config.verifyProxy) {
+        await verifyTransformersProxy(this.#requireProxyOrigin(), preset.id);
+      }
+      const { loadTdtModel } = await import("./tdt/index.js");
+      const model = await loadTdtModel(preset.id, { ...this.config.tdt, device, baseUrl: `${root}${preset.id}/resolve/main/`, onProgress: this.#makeTransformersProgressForwarder(progress) });
+      progress({ progress: 1 });
+      return { ...newLoadedModel(preset), multimodal: { kind: "tdt", model } };
+    }
     this.#status(`Loading ${preset.shortName} with Transformers.js/WebGPU…`);
     progress({ progress: 0.05 });
 
@@ -547,12 +559,12 @@ export class BrowserAI extends TypedEmitter<BrowserAIEvents> {
     });
   }
 
-  /** Transcribe 16 kHz mono PCM (or a URL) with the loaded Transcription-slot model. */
-  async transcribe(audio: Float32Array | string, onDelta?: (text: string) => void): Promise<SttResult> {
+  /** Transcribe 16 kHz mono PCM. ASR pipelines also accept URLs; TDT and generative models require decoded PCM. The optional signal cooperatively cancels TDT decoding between inference calls. */
+  async transcribe(audio: Float32Array | string, onDelta?: (text: string) => void, signal?: AbortSignal): Promise<SttResult> {
     const model = this.sttModel();
     if (!model?.multimodal) throw new MissingModelError("stt");
     const handle = model.multimodal;
-    return this.#runExclusive(model, () => transcribeWithHandle(handle, audio, onDelta));
+    return this.#runExclusive(model, () => transcribeWithHandle(handle, audio, onDelta, signal));
   }
 
   /** Synthesize speech with the loaded Speech-slot model. Returns the raw model audio. */
@@ -623,6 +635,14 @@ export class BrowserAI extends TypedEmitter<BrowserAIEvents> {
         release();
       },
     };
+  }
+
+  /** Return scored labels with the loaded Image-slot classifier. */
+  async classifyImage(imageSrc: string): Promise<ImageClassificationResult> {
+    const model = this.visionModel();
+    if (!model?.multimodal) throw new MissingModelError("vision");
+    const handle = model.multimodal;
+    return this.#runExclusive(model, () => classifyImageWithHandle(handle, imageSrc));
   }
 
   /** Ask a question about an image with the loaded Image-slot model (VLM or Gemma). */

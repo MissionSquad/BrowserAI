@@ -50,7 +50,7 @@ const ALLOWED_HF_REPOS_BY_OWNER = new Map<string, Set<string>>([
 // through /hf-transformers/*. Derive those allowlist entries from the SDK's model catalog so the
 // proxy can never drift out of sync with it — a missing entry 403s hosted model loads.
 for (const preset of MODEL_PRESETS) {
-  if (preset.backend !== "transformers-js") continue;
+  if (preset.backend === "webllm") continue;
   const [owner, ...repoParts] = preset.id.split("/");
   if (!owner || repoParts.length === 0) continue;
   const repos = ALLOWED_HF_REPOS_BY_OWNER.get(owner) ?? new Set<string>();

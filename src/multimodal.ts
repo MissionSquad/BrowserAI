@@ -1,3 +1,4 @@
+import type { TdtModel } from "./tdt/index.js";
 import { type ModelPreset, type MultimodalRuntime, SUPERTONIC_2_MODEL_ID } from "./models.js";
 import { AUDIO_SR } from "./audio/pcm.js";
 
@@ -73,6 +74,7 @@ export type ProgressCallback = (info: { status?: string; progress?: number; file
 export type GenStats = { completionTokens: number; firstTokenMs?: number; startedMs: number; endedMs: number };
 /** VLM / Gemma generation result: text plus telemetry. */
 export type VlmResult = { text: string } & GenStats;
+export type ImageClassificationResult = { scores: Array<{ label: string; score: number }>; startedMs: number; endedMs: number };
 export type SttResult = { text: string; segments: Array<{ start: number; end: number; text: string }>; gen?: GenStats };
 
 /** Count tokens from a TextStreamer token_callback payload (array / typed array / tensor). */
@@ -93,10 +95,11 @@ function makeCountingStreamer(
   tokenizer: unknown,
   onDelta: ((text: string) => void) | undefined,
   sink: { text: string; completionTokens: number; firstTokenMs?: number },
+  preserveSpecialTokens = false,
 ): unknown {
   return new Streamer(tokenizer, {
     skip_prompt: true,
-    skip_special_tokens: true,
+    skip_special_tokens: !preserveSpecialTokens,
     callback_function: (chunk: unknown) => {
       if (typeof chunk === "string") {
         if (sink.firstTokenMs === undefined) sink.firstTokenMs = performance.now();
@@ -112,6 +115,8 @@ function makeCountingStreamer(
 
 /** A loaded multimodal runtime, discriminated by kind. */
 export type MultimodalHandle =
+  | { kind: "tdt"; model: TdtModel }
+  | { kind: "image-classification"; classifier: ((src: string, opts: AnyRecord) => Promise<unknown>) & { dispose?: () => Promise<void> } }
   | { kind: "stt"; transcriber: (input: unknown, opts?: AnyRecord) => Promise<any> }
   | { kind: "tts-kokoro"; tts: KokoroInstance; TextSplitterStream: new () => TtsTextSplitter }
   | { kind: "tts-pipeline"; synth: (text: string, opts: AnyRecord) => Promise<RawAudio>; modelId: string }
@@ -126,6 +131,7 @@ export type MultimodalHandle =
       /** SmolVLM passes the image as [image] + a trailing {}; others pass a bare image. */
       imageArray: boolean;
       maxNewTokens: number;
+      visionOptions?: ModelPreset["visionOptions"];
     }
   | {
       kind: "gemma";
@@ -169,7 +175,10 @@ export type LoadMultimodalOptions = {
 };
 
 function vlmDtype(preset: ModelPreset, runtime: MultimodalRuntime): unknown {
-  if (runtime === "vlm-vision2seq") return { embed_tokens: "fp16", vision_encoder: "q4", decoder_model_merged: "q4" };
+  if (runtime === "vlm-vision2seq") {
+    if (preset.visionOptions?.outputFormat === "doctags") return preset.transformersDtype ?? "fp32";
+    return { embed_tokens: "fp16", vision_encoder: "q4", decoder_model_merged: "q4" };
+  }
   // imagetext family: GLM-OCR ships a single q4f16 dtype; Qwen3-VL uses a per-module mixed map.
   if (preset.transformersDtype) return preset.transformersDtype;
   return { embed_tokens: "fp16", vision_encoder: "fp16", decoder_model_merged: "q4f16" };
@@ -204,6 +213,14 @@ export async function loadMultimodal(
   if (!runtime) throw new Error(`Model ${preset.shortName} has no multimodal runtime.`);
 
   switch (runtime) {
+    case "stt-tdt": {
+      const { loadTdtModel } = await import("./tdt/index.js");
+      return { kind: "tdt", model: await loadTdtModel(preset.id, { device, onProgress: progress_callback }) };
+    }
+    case "image-classification": {
+      const classifier = await transformers.pipeline("image-classification", preset.id, { device, dtype: preset.transformersDtype ?? "q4f16", progress_callback });
+      return { kind: "image-classification", classifier };
+    }
     case "stt": {
       // Whisper/Moonshine load an fp32 encoder + a quantized decoder (encoder quantization hurts
       // accuracy). Some ASR models document a single flat dtype instead — e.g. Cohere's cohere_asr,
@@ -244,7 +261,14 @@ export async function loadMultimodal(
     case "vlm-imagetext": {
       const processor = await transformers.AutoProcessor.from_pretrained(preset.id, { progress_callback });
       const ModelClass = runtime === "vlm-vision2seq" ? transformers.AutoModelForVision2Seq : transformers.AutoModelForImageTextToText;
-      const model = await ModelClass.from_pretrained(preset.id, { device: "webgpu", dtype: vlmDtype(preset, runtime), progress_callback });
+      let model;
+      try {
+        model = await ModelClass.from_pretrained(preset.id, { device: "webgpu", dtype: vlmDtype(preset, runtime), progress_callback });
+      } catch (error) {
+        // Release any processor-owned resources if the subsequent model load fails.
+        try { await processor.dispose?.(); } catch { /* preserve the loading error */ }
+        throw error;
+      }
       return {
         kind: "vlm",
         processor,
@@ -254,7 +278,8 @@ export async function loadMultimodal(
         maxPixels: runtime === "vlm-imagetext" ? MAX_PIXELS : 0,
         imageArray: runtime === "vlm-vision2seq",
         // Generous caps so descriptions/OCR are not truncated mid-output (any OCR model → 2048).
-        maxNewTokens: preset.id.toLowerCase().includes("ocr") ? 2048 : 1024,
+        maxNewTokens: preset.visionOptions?.maxNewTokens ?? (preset.id.toLowerCase().includes("ocr") ? 2048 : 1024),
+        visionOptions: preset.visionOptions,
       };
     }
     case "gemma-mm": {
@@ -283,6 +308,10 @@ async function loadKokoroModule(options?: LoadMultimodalOptions["kokoro"]): Prom
 
 export async function disposeMultimodal(handle: MultimodalHandle | null): Promise<void> {
   if (!handle) return;
+  if (handle.kind === "image-classification") {
+    try { await handle.classifier.dispose?.(); } catch { /* best-effort cleanup */ }
+    return;
+  }
   const model = (handle as { model?: { dispose?: () => unknown } }).model;
   try {
     if (typeof model?.dispose === "function") await model.dispose();
@@ -329,10 +358,12 @@ export function planGemmaAudioWindows(totalSamples: number): AudioWindow[] {
  * the generative STT recipes (Gemma, Granite Speech, Voxtral) require decoded PCM.
  * @throws {Error} when a URL is passed to a model that cannot fetch audio itself.
  */
-export async function transcribe(handle: MultimodalHandle, audio: Float32Array | string, onDelta?: (text: string) => void): Promise<SttResult> {
+export async function transcribe(handle: MultimodalHandle, audio: Float32Array | string, onDelta?: (text: string) => void, signal?: AbortSignal): Promise<SttResult> {
   if (typeof audio === "string" && handle.kind !== "stt") {
     throw new Error("URL audio input is only supported by ASR-pipeline models (Whisper/Moonshine). Decode to 16 kHz mono PCM first (decodeAudioTo16kMono).");
   }
+  signal?.throwIfAborted();
+  if (handle.kind === "tdt") return handle.model.transcribe(audio as Float32Array, onDelta, signal);
   if (handle.kind === "gemma") {
     // Callers supply decoded 16 kHz samples; chunk anything past Gemma's ~30s window.
     return transcribeGemmaChunked(handle, audio as Float32Array, onDelta);
@@ -575,22 +606,36 @@ export function synthesizeStream(
   return { splitter, chunks: chunks() };
 }
 
+/** Classify one image, returning all labels and inference timing. */
+export async function classifyImage(handle: MultimodalHandle, imageSrc: string): Promise<ImageClassificationResult> {
+  if (handle.kind !== "image-classification") throw new Error("Loaded model cannot classify images; select an image-classification model.");
+  if (!imageSrc.trim()) throw new Error("An image source is required.");
+  const startedMs = performance.now();
+  const output = await handle.classifier(imageSrc, { top_k: null });
+  if (!Array.isArray(output) || !output.every((item: unknown) => typeof item === "object" && item !== null && "label" in item && typeof item.label === "string" && "score" in item && typeof item.score === "number" && Number.isFinite(item.score))) {
+    throw new Error("Image classifier returned invalid label scores.");
+  }
+  return { scores: output.map((item: { label: string; score: number }) => ({ label: item.label, score: item.score })), startedMs, endedMs: performance.now() };
+}
+
 /** Answer a question about an image (VLM). Streams partial text via onDelta; returns text + telemetry. */
 export async function describeImage(handle: MultimodalHandle, imageSrc: string, prompt: string, onDelta?: (text: string) => void): Promise<VlmResult> {
+  if (handle.kind === "image-classification") throw new Error("Loaded model classifies images; use classifyImage() to obtain label scores.");
   if (handle.kind === "gemma") return runGemma(handle, { imageSrc, prompt }, onDelta);
   if (handle.kind !== "vlm") throw new Error("Loaded model cannot analyze images.");
 
-  const messages = [{ role: "user", content: [{ type: "image" }, { type: "text", text: prompt }] }];
+  const messages = [{ role: "user", content: [{ type: "image" }, { type: "text", text: prompt.trim() || handle.visionOptions?.defaultPrompt || prompt }] }];
   const text = handle.processor.apply_chat_template(messages, { add_generation_prompt: true });
   const src = handle.maxPixels ? await capSrc(imageSrc, handle.maxPixels) : imageSrc;
   const image = await handle.loadImage(src);
-  const inputs = handle.imageArray ? await handle.processor(text, [image], {}) : await handle.processor(text, image);
+  const inputs = handle.imageArray ? await handle.processor(text, [image], handle.visionOptions?.doImageSplitting === undefined ? {} : { do_image_splitting: handle.visionOptions.doImageSplitting }) : await handle.processor(text, image);
 
   const sink = { text: "", completionTokens: 0, firstTokenMs: undefined as number | undefined };
   const startedMs = performance.now();
-  const streamer = makeCountingStreamer(handle.Streamer, handle.processor.tokenizer, onDelta, sink);
+  const cleanOutput = (value: string): string => handle.visionOptions?.outputFormat === "doctags" ? value.replace(/<\|end_of_text\|>\s*$/, "").trimEnd() : value;
+  const streamer = makeCountingStreamer(handle.Streamer, handle.processor.tokenizer, onDelta ? (value) => onDelta(cleanOutput(value)) : undefined, sink, handle.visionOptions?.preserveSpecialTokens);
   await handle.model.generate({ ...inputs, max_new_tokens: handle.maxNewTokens, do_sample: false, streamer });
-  return { text: sink.text.trim(), completionTokens: sink.completionTokens, firstTokenMs: sink.firstTokenMs, startedMs, endedMs: performance.now() };
+  return { text: cleanOutput(sink.text).trim(), completionTokens: sink.completionTokens, firstTokenMs: sink.firstTokenMs, startedMs, endedMs: performance.now() };
 }
 
 /** Gemma-4 text + image + audio. image/audio placeholders go before the text; audio is a 16 kHz Float32Array. */

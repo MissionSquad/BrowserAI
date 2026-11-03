@@ -26,6 +26,9 @@ export type KokoroOptions = {
   load?: () => Promise<KokoroModule>;
 };
 
+/** Optional location of the matching ORT 1.31.1 asyncify MJS/WASM files. */
+export type TdtOptions = { wasmPaths?: string | { mjs: string; wasm: string } };
+
 export type TtsDefaults = {
   /** Voice id for the loaded TTS model's roster (Kokoro: "af_heart" etc.; Supertonic: "F1"–"M5"). */
   voice: string;
@@ -69,6 +72,8 @@ export type BrowserAIConfig = {
   cacheBackend?: BrowserCacheBackend;
   webllm?: WebLLMOptions;
   kokoro?: KokoroOptions;
+  /** Override speech-runtime assets for self-hosted/offline applications. */
+  tdt?: TdtOptions;
   /** Default TTS voice/speed/pitch used by synthesize helpers and the voice pipeline. */
   tts?: Partial<TtsDefaults>;
   history?: HistoryOptions;
@@ -81,6 +86,7 @@ export type ResolvedConfig = {
   cacheBackend: BrowserCacheBackend;
   webllm: WebLLMOptions;
   kokoro: KokoroOptions;
+  tdt: TdtOptions;
   tts: TtsDefaults;
   history: HistoryOptions;
 };
@@ -98,6 +104,7 @@ export function resolveConfig(config: BrowserAIConfig = {}): ResolvedConfig {
     cacheBackend: config.cacheBackend ?? "indexeddb",
     webllm: config.webllm ?? {},
     kokoro: config.kokoro ?? {},
+    tdt: config.tdt ?? {},
     tts: { voice: "af_heart", speed: 1, pitch: 1, ...config.tts },
     history: config.history ?? {},
   };

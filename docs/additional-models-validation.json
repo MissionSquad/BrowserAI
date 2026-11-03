@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-03",
+  "runner": "isolated headless Chrome; localhost artifacts",
+  "models": {
+    "classifier": {
+      "status": "done",
+      "loadedMs": 928.5700001716614,
+      "output": {
+        "scores": [
+          {
+            "label": "normal",
+            "score": 0.9998869299888611
+          },
+          {
+            "label": "nsfw",
+            "score": 0.00011305080261081457
+          }
+        ],
+        "startedMs": 2112.9850001335144,
+        "endedMs": 2665.3200001716614
+      },
+      "totalMs": 1480.960000038147
+    },
+    "docling": {
+      "status": "done",
+      "loadedMs": 1343.0300002098083,
+      "output": {
+        "text": "<doctag><section_header_level_1><loc_31><loc_40><loc_197><loc_82>INVOICE 1042</section_header_level_1>\n<text><loc_31><loc_144><loc_281><loc_173>Customer: Example Company</text>\n<text><loc_31><loc_191><loc_72><loc_221>Total:</text>\n<text><loc_72><loc_191><loc_149><loc_221>$125.00</text>\n</doctag>",
+        "completionTokens": 97,
+        "firstTokenMs": 7348.135000228882,
+        "startedMs": 4281.150000095367,
+        "endedMs": 9139.450000286102
+      },
+      "totalMs": 6466.929999828339
+    },
+    "phonon": {
+      "status": "done",
+      "loadedMs": 2827.3150000572205,
+      "output": {
+        "text": "And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+        "segments": [
+          {
+            "start": 0,
+            "end": 11,
+            "text": "And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+          }
+        ]
+      },
+      "totalMs": 3932.4749999046326
+    },
+    "parakeet": {
+      "status": "done",
+      "loadedMs": 3792.2649998664856,
+      "output": {
+        "text": "And so, my fellow Americans, ask not what your country can do for you. Ask what you can do for your country.",
+        "segments": [
+          {
+            "start": 0,
+            "end": 11,
+            "text": "And so, my fellow Americans, ask not what your country can do for you. Ask what you can do for your country."
+          }
+        ]
+      },
+      "totalMs": 7746.5
+    }
+  },
+  "browser": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "webgpu": true,
+    "vendor": "apple",
+    "architecture": "metal-3"
+  },
+  "scope": "Single benign image, synthetic invoice and 11-second public JFK audio clip. Local model files exercise browserlab runtime source. No broad accuracy or cross-browser benchmark.",
+  "precision_decisions": {
+    "classifier": "FP32: normal0.999887 on benign cats; FP16/q4f16 WebGPU produced uncertain0.515nsfw despite CPUreference normal0.99989.",
+    "docling": "FP32: correct invoice with DocTags. q4f16WebGPU produced4096exclamationmarks and is not selected."
+  }
+}

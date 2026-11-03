@@ -36,7 +36,7 @@ export type RunRecord = {
   /** Derived vendor bucket for filtering/labels. */
   vendor: ModelVendor;
   /** Backend used for the run. */
-  backend: "webllm" | "transformers-js";
+  backend: "webllm" | "transformers-js" | "onnx-runtime";
   /** Task key ({@link RunCaseKey} suggested; any non-empty string accepted). */
   case: string;
   promptTokens: number;
@@ -111,7 +111,7 @@ function coerceRecord(value: unknown): RunRecord | null {
     ts: record.ts as number,
     model: record.model,
     vendor: VALID_VENDORS.has(record.vendor as ModelVendor) ? (record.vendor as ModelVendor) : "other",
-    backend: record.backend === "transformers-js" ? "transformers-js" : "webllm",
+    backend: record.backend === "onnx-runtime" ? "onnx-runtime" : record.backend === "transformers-js" ? "transformers-js" : "webllm",
     case: record.case,
     promptTokens: record.promptTokens as number,
     completionTokens: record.completionTokens as number,
