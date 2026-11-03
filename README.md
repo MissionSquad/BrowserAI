@@ -222,6 +222,7 @@ estimates, download size, stability rating, and per-model default runtime parame
 npm ci
 npm run build   # type-check + emit dist (ESM + .d.ts)
 npm test        # vitest unit tests
+npm run validate # full CI checks: build, tests, and example type-checks
 ```
 
 ## License

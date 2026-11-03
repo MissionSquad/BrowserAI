@@ -1,3 +1,4 @@
+/// <reference path="./runtime-types.d.ts" />
 import * as ort from 'onnxruntime-tdt/webgpu';
 import { phononFeatures } from './frontend.js';
 import { nemoFeatures } from './nemo-frontend.js';

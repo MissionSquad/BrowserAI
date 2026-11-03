@@ -29,7 +29,9 @@
     "build": "npm run clean && tsc --noEmit && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm test",
+    "typecheck:examples": "tsc -p examples/tsconfig.json",
+    "validate": "npm run build && npm test && npm run typecheck:examples"
   },
   "engines": {
     "node": ">=20"
