@@ -179,7 +179,7 @@ function vlmDtype(preset: ModelPreset, runtime: MultimodalRuntime): unknown {
     if (preset.visionOptions?.outputFormat === "doctags") return preset.transformersDtype ?? "fp32";
     return { embed_tokens: "fp16", vision_encoder: "q4", decoder_model_merged: "q4" };
   }
-  // imagetext family: GLM-OCR ships a single q4f16 dtype; Qwen3-VL uses a per-module mixed map.
+  // imagetext family: GLM-OCR ships a single q4f16 dtype; Qwen3-VL and LFM3-VL use this mixed map.
   if (preset.transformersDtype) return preset.transformersDtype;
   return { embed_tokens: "fp16", vision_encoder: "fp16", decoder_model_merged: "q4f16" };
 }
@@ -625,16 +625,28 @@ export async function describeImage(handle: MultimodalHandle, imageSrc: string, 
   if (handle.kind !== "vlm") throw new Error("Loaded model cannot analyze images.");
 
   const messages = [{ role: "user", content: [{ type: "image" }, { type: "text", text: prompt.trim() || handle.visionOptions?.defaultPrompt || prompt }] }];
-  const text = handle.processor.apply_chat_template(messages, { add_generation_prompt: true });
+  const templateOptions: AnyRecord = { add_generation_prompt: true };
+  if (handle.visionOptions?.enableThinking !== undefined) templateOptions.enable_thinking = handle.visionOptions.enableThinking;
+  const text = handle.processor.apply_chat_template(messages, templateOptions);
   const src = handle.maxPixels ? await capSrc(imageSrc, handle.maxPixels) : imageSrc;
   const image = await handle.loadImage(src);
-  const inputs = handle.imageArray ? await handle.processor(text, [image], handle.visionOptions?.doImageSplitting === undefined ? {} : { do_image_splitting: handle.visionOptions.doImageSplitting }) : await handle.processor(text, image);
+  // LFM3-VL's processor takes images first; its chat template already supplies BOS.
+  const inputs = handle.visionOptions?.processorOrder === "image-first"
+    ? await handle.processor(image, text, { add_special_tokens: false })
+    : handle.imageArray
+      ? await handle.processor(text, [image], handle.visionOptions?.doImageSplitting === undefined ? {} : { do_image_splitting: handle.visionOptions.doImageSplitting })
+      : await handle.processor(text, image);
 
   const sink = { text: "", completionTokens: 0, firstTokenMs: undefined as number | undefined };
   const startedMs = performance.now();
   const cleanOutput = (value: string): string => handle.visionOptions?.outputFormat === "doctags" ? value.replace(/<\|end_of_text\|>\s*$/, "").trimEnd() : value;
   const streamer = makeCountingStreamer(handle.Streamer, handle.processor.tokenizer, onDelta ? (value) => onDelta(cleanOutput(value)) : undefined, sink, handle.visionOptions?.preserveSpecialTokens);
-  await handle.model.generate({ ...inputs, max_new_tokens: handle.maxNewTokens, do_sample: false, streamer });
+  const sampling = handle.visionOptions?.generationOptions;
+  const generationOptions: AnyRecord = { ...inputs, max_new_tokens: handle.maxNewTokens, do_sample: (sampling?.temperature ?? 0) > 0, streamer };
+  if (sampling?.temperature !== undefined) generationOptions.temperature = sampling.temperature;
+  if (sampling?.topK !== undefined) generationOptions.top_k = sampling.topK;
+  if (sampling?.repetitionPenalty !== undefined) generationOptions.repetition_penalty = sampling.repetitionPenalty;
+  await handle.model.generate(generationOptions);
   return { text: cleanOutput(sink.text).trim(), completionTokens: sink.completionTokens, firstTokenMs: sink.firstTokenMs, startedMs, endedMs: performance.now() };
 }
 

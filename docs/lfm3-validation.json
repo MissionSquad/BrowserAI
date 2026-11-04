@@ -1,0 +1,148 @@
+{
+  "date": "2026-11-03",
+  "transformers": "4.3.2",
+  "scope": "Actual browser inference using the public BrowserAI API and browserlab UI; locally served copies of pinned public artifacts, with matching CDN runtime. Single-case smoke checks, not broad accuracy or cross-browser benchmarks.",
+  "cdn": [
+    "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/dist/ort-wasm-simd-threaded.asyncify.wasm",
+    "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/dist/ort-wasm-simd-threaded.asyncify.mjs"
+  ],
+  "models": {
+    "lfm3-text": {
+      "status": "done",
+      "loadMs": 1908,
+      "output": {
+        "text": "17 + 25 = 42\n\n42",
+        "repeat": "9 + 6 = 15\n\n15",
+        "capital": "The capital of France is **Paris**. It's one of the most well-known cities in the world, famous for landmarks like the Eiffel Tower, the Louvre Museum, and Notre-Dame Cathedral.",
+        "ready": "READY",
+        "thinking": "We need to answer the question: \"What is 17 plus 25?\" This is a simple addition. 17 + 25 = 42. So the answer is 42. I'll just give the answer.</think>17 plus 25 equals 42.\n\n**Calculation:**  \n17 + 25 = 42.",
+        "streamCallbacks": 6,
+        "stats": {
+          "rawText": "model: onnx-community/LFM3-1.7B-ONNX\nbackend: Transformers.js\nfinish_reason: stop/unknown\nmeasured_elapsed_ms: 171\n\nToken usage:\n  prompt_tokens: 25\n  completion_tokens: 10\n  total_tokens: 35\n  measured_completion_tokens_per_second: 58.41\n\nTransformers.js measured telemetry:\n  e2e_latency_s: 0.171\n  prefill_tokens_per_s: 236.29\n  decode_tokens_per_s: 152.91\n  time_to_first_token_s: 0.106\n  time_per_output_token_s: 0.0072\n  token_count_source: streamer\n\nLatency breakdown:\n{\n  \"transformersTokenIntervalTime\": [\n    0.0155,\n    0.006200000286102295,\n    0.007,\n    0.005899999618530273,\n    0.005800000190734863,\n    0.006,\n    0.0065,\n    0.006,\n    0.0060999999046325686\n  ]\n}",
+          "model": "onnx-community/LFM3-1.7B-ONNX",
+          "backend": "transformers-js",
+          "finishReason": "stop/unknown",
+          "measuredElapsedMs": 171.19999980926514,
+          "promptTokens": 25,
+          "completionTokens": 10,
+          "totalTokens": 35,
+          "measuredCompletionTokensPerSecond": 58.41121501834728,
+          "extra": {
+            "e2e_latency_s": 0.17119999980926515,
+            "prefill_tokens_per_s": 236.2948966692298,
+            "decode_tokens_per_s": 152.90519855378935,
+            "time_to_first_token_s": 0.10579999971389771,
+            "time_per_output_token_s": 0.007222222222222223,
+            "latencyBreakdown": {
+              "transformersTokenIntervalTime": [
+                0.0155,
+                0.006200000286102295,
+                0.007,
+                0.005899999618530273,
+                0.005800000190734863,
+                0.006,
+                0.0065,
+                0.006,
+                0.0060999999046325686
+              ]
+            },
+            "token_count_source": "streamer"
+          },
+          "latencyBreakdown": {
+            "transformersTokenIntervalTime": [
+              0.0155,
+              0.006200000286102295,
+              0.007,
+              0.005899999618530273,
+              0.005800000190734863,
+              0.006,
+              0.0065,
+              0.006,
+              0.0060999999046325686
+            ]
+          }
+        }
+      },
+      "elapsedMs": 2818.6000003814697
+    },
+    "lfm3-vision": {
+      "status": "done",
+      "loadMs": 2314.199999809265,
+      "output": {
+        "text": "There are two cats in the image.",
+        "completionTokens": 9,
+        "firstTokenMs": 5467.300000190735,
+        "startedMs": 5299.300000190735,
+        "endedMs": 5512
+      },
+      "elapsedMs": 2615.5999999046326
+    },
+    "classifier": {
+      "status": "done",
+      "output": {
+        "scores": [
+          {
+            "label": "normal",
+            "score": 0.9998869299888611
+          },
+          {
+            "label": "nsfw",
+            "score": 0.00011305086081847548
+          }
+        ],
+        "startedMs": 6115.300000190735,
+        "endedMs": 6151
+      },
+      "elapsedMs": 622.0999999046326
+    },
+    "docling": {
+      "status": "done",
+      "output": {
+        "text": "<doctag><section_header_level_1><loc_31><loc_40><loc_197><loc_82>INVOICE 1042</section_header_level_1>\n<text><loc_31><loc_144><loc_281><loc_173>Customer: Example Company</text>\n<text><loc_31><loc_191><loc_72><loc_221>Total:</text>\n<text><loc_72><loc_191><loc_149><loc_221>$125.00</text>\n</doctag>",
+        "completionTokens": 97,
+        "firstTokenMs": 8791.099999904633,
+        "startedMs": 7845.099999904633,
+        "endedMs": 10085
+      },
+      "elapsedMs": 3922.4000000953674
+    },
+    "bolt": {
+      "status": "done",
+      "output": {
+        "text": "42",
+        "repeat": "15",
+        "image": "There are two cats here.",
+        "audio": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country"
+      },
+      "elapsedMs": 9057.299999713898
+    }
+  },
+  "browser": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "vendor": "apple",
+    "architecture": "metal-3"
+  },
+  "configuration_findings": [
+    "The shared repetition penalty 1.08 produced 27 for 17 + 25 on WebGPU. LFM3 text now uses 1.0; the same prompt produced 17 + 25 = 42 and 42. Native CPU and browser prompt token IDs matched; no general CPU/GPU logit-equivalence claim is made.",
+    "LFM3-VL uses the published low-temperature sampling recipe. Its short answer 2. was correct but Markdown rendering treated it as an empty list; browserlab now preserves bare numeric answers."
+  ],
+  "export_revisions": {
+    "onnx-community/LFM3-1.7B-ONNX": "ab9fec4c681a25bec3b48b0b97a62fc2660a2985",
+    "onnx-community/LFM3-VL-2B-ONNX": "d40cacd75af603679f80574054ab763d3ebd8f3b"
+  },
+  "vision_generation": {
+    "temperature": 0.1,
+    "top_k": 50,
+    "repetition_penalty": 1.1,
+    "enable_thinking": false
+  },
+  "browserlab_ui": {
+    "libraryIds": [
+      "onnx-community/LFM3-1.7B-ONNX",
+      "onnx-community/LFM3-VL-2B-ONNX"
+    ],
+    "vendor": "Liquid",
+    "chat": "Paris is the capital of France.</think>Paris is the capital of France.",
+    "image": "2."
+  }
+}
