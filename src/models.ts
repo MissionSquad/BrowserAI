@@ -63,7 +63,7 @@ export type ModelPreset = {
   /** How a multimodal (non-LLM-text) model loads + runs. Undefined for plain text LLMs. */
   mmRuntime?: MultimodalRuntime;
   /** Per-model image processing and generation behavior. */
-  visionOptions?: { defaultPrompt?: string; maxNewTokens?: number; preserveSpecialTokens?: boolean; doImageSplitting?: boolean; outputFormat?: "doctags" };
+  visionOptions?: { defaultPrompt?: string; maxNewTokens?: number; preserveSpecialTokens?: boolean; doImageSplitting?: boolean; outputFormat?: "doctags"; processorOrder?: "image-first" | "text-first"; enableThinking?: boolean; generationOptions?: { temperature?: number; topK?: number; repetitionPenalty?: number } };
   /** Optional display brand for the vendor tag (e.g. "Moonshine", "Kokoro", "Zhipu"). Falls back to the vendor label. */
   brand?: string;
 };
@@ -325,6 +325,37 @@ export const MODEL_PRESETS: ModelPreset[] = [
     stability: "experimental",
     officialRepo: "https://huggingface.co/google/gemma-4-E4B-it",
     artifactRepo: "https://huggingface.co/welcoma/gemma-4-E4B-it-q4f16_1-MLC",
+  },
+
+  {
+    id: "onnx-community/LFM3-1.7B-ONNX",
+    label: "LFM3 1.7B — experimental Liquid text model (~3 GB memory est.)",
+    shortName: "LFM3 1.7B",
+    description: "Liquid AI instruction model using the published q4f16 ONNX export. Thinking is disabled by default and can be enabled in runtime settings.",
+    approximateDownload: "~1.09 GB q4f16 graph and weights plus tokenizer/config files",
+    vramRequiredMB: 3072, vramSource: "estimated", lowResourceRequired: false,
+    disableThinkingSupported: true, defaultRuntime: extractionPreset({ disableThinking: true, repetitionPenalty: 1 }),
+    source: "transformers-onnx", backend: "transformers-js", stability: "experimental",
+    officialRepo: "https://huggingface.co/LiquidAI/LFM3-1.7B",
+    artifactRepo: "https://huggingface.co/onnx-community/LFM3-1.7B-ONNX",
+    transformersDtype: "q4f16", brand: "Liquid",
+    notes: "Requires Transformers.js 4.3.2 and WebGPU. Memory is an estimate, not a measured minimum.",
+  },
+  {
+    id: "onnx-community/LFM3-VL-2B-ONNX",
+    label: "LFM3-VL 2B — experimental Liquid image understanding (~4 GB memory est.)",
+    shortName: "LFM3-VL 2B",
+    description: "Liquid AI vision-language model for image questions. Uses FP16 vision/embeddings with a q4f16 decoder and disables thinking for image answers.",
+    approximateDownload: "~1.94 GB mixed FP16/q4f16 ONNX modules plus processor/config files",
+    vramRequiredMB: 4096, vramSource: "estimated", lowResourceRequired: false,
+    disableThinkingSupported: false, defaultRuntime: extractionPreset({ disableThinking: true }),
+    source: "transformers-onnx", backend: "transformers-js", stability: "experimental",
+    officialRepo: "https://huggingface.co/LiquidAI/LFM3-VL-2B",
+    artifactRepo: "https://huggingface.co/onnx-community/LFM3-VL-2B-ONNX",
+    tasks: ["vision"], modalityIn: ["image", "text"], modalityOut: ["text"],
+    mmRuntime: "vlm-imagetext", brand: "Liquid",
+    visionOptions: { processorOrder: "image-first", enableThinking: false, generationOptions: { temperature: 0.1, topK: 50, repetitionPenalty: 1.1 } },
+    notes: "Requires Transformers.js 4.3.2 and WebGPU. Image input only in this app; video and text-only generation are not exposed. Memory is an estimate, not a measured minimum.",
   },
   {
     id: "enriqueag/phonon-2.5-onnx",

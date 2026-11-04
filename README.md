@@ -232,3 +232,10 @@ ISC
 ### MiniCPM5 2B
 
 MiniCPM5 2B (`RASMUS/MiniCPM5-2B-ONNX`) and MiniCPM5 2B Heretic (`j4ys0n/MiniCPM5-2B-heretic-abliterated-ONNX`) are available through Transformers.js/WebGPU with q4f16 weights. See [runtime measurements, model sources and the Heretic ONNX conversion recipe](docs/minicpm5.md).
+
+
+### Liquid LFM3
+
+Transformers.js is pinned to 4.3.2. The catalog includes `onnx-community/LFM3-1.7B-ONNX` for text and `onnx-community/LFM3-VL-2B-ONNX` for image questions; both are experimental and appear under Liquid in browserlab. See [configuration and validation](docs/lfm3.md).
+
+The SDK declares Node.js >=20.9.0 for installation, matching the upgraded runtime dependencies. Inference APIs still target the browser.

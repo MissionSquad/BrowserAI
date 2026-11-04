@@ -24,14 +24,14 @@ console.log(classification.scores); // [{ label: "normal", score: ... }, ...]
 await ai.load("onnx-community/granite-docling-258M-ONNX"); // replaces the Image slot owner
 const document = await ai.describeImage(imageUrl, "Convert this page to docling.");
 console.log(document.text);
-await ai.dispose();
+await ai.unloadAll();
 ```
 
 The classifier uses the Image slot and returns scores with elapsed-time information. It does not accept an instruction prompt. Browserlab hides that prompt and displays both scores. These are model predictions, not definitive moderation decisions.
 
 Docling has its own prompt, image splitting, and 4096-token limit. Its document/table/location tokens are marked special by the tokenizer, so the generic special-token stripping is disabled only for this preset. The final transport end-of-text marker is removed while DocTags remain intact. Browserlab renders this as literal text so document tags cannot be interpreted as HTML. Input is a page image; PDF rasterization, multi-page ingestion, and DocTags-to-Markdown conversion are not part of this change.
 
-FP32 is deliberate. On Apple WebGPU, the classifier's FP16 and q4f16 outputs were near 50/50 on a benign cat image despite corresponding CPU models producing normal≈0.99989. Docling's q4f16 path emitted repeated punctuation. The chosen FP32 paths produced the expected classification and structured invoice output. The smaller exports remain unselected pending separate validation.
+FP32 is deliberate. During the original Transformers.js 4.2.0 validation on Apple WebGPU, the classifier's FP16 and q4f16 outputs were near 50/50 on a benign cat image despite corresponding CPU models producing normal≈0.99989. Docling's q4f16 path emitted repeated punctuation. The chosen FP32 paths produced the expected classification and structured invoice output. The FP32 paths are retained and rechecked in the 4.3.2 upgrade; smaller exports remain unselected pending separate validation.
 
 ## Speech APIs and lifecycle
 
@@ -50,7 +50,7 @@ The adapters use the published token-duration decoder contracts, preserve recurr
 
 ## Runtime, cache and proxy behavior
 
-The `onnxruntime-tdt` npm alias pins ONNX Runtime Web 1.31.1 independently of Transformers.js 4.2.0's existing runtime. The new native WebGPU bundle requires matching **asyncify** MJS/WASM assets; JSEP assets cannot initialize it. Defaults reference the pinned official jsDelivr distribution. SDK applications can override `new BrowserAI({ tdt: { wasmPaths: { mjs: "/ort/ort-wasm-simd-threaded.asyncify.mjs", wasm: "/ort/ort-wasm-simd-threaded.asyncify.wasm" } } })` when serving those matching assets themselves.
+The `onnxruntime-tdt` npm alias pins ONNX Runtime Web 1.31.1 independently of Transformers.js 4.3.2's own runtime. The new native WebGPU bundle requires matching **asyncify** MJS/WASM assets; JSEP assets cannot initialize it. Defaults reference the pinned official jsDelivr distribution. SDK applications can override `new BrowserAI({ tdt: { wasmPaths: { mjs: "/ort/ort-wasm-simd-threaded.asyncify.mjs", wasm: "/ort/ort-wasm-simd-threaded.asyncify.wasm" } } })` when serving those matching assets themselves.
 
 TDT artifacts use the existing `transformers-cache` bucket and each preset's own repository URL, so existing cache inspection/deletion remains scoped to that model. Storage open/read/write failures emit `cache-warning` and inference continues without persistent caching. Failed HTTP downloads remain errors. The worker derives allowlists from both Transformers.js and ONNX Runtime presets. History and runtime labels preserve the new `onnx-runtime` backend.
 
